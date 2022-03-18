@@ -19,11 +19,6 @@ contract Staker {
 
   event Stake(address _from, uint256 _value);
 
-  modifier allowWithdraw {
-    require(openToWithdraw == true);
-    _;
-  }
-
   function stake() public payable {
       balances[msg.sender] += msg.value;
       emit Stake(address(this), msg.value);
@@ -45,15 +40,17 @@ contract Staker {
     }
   }
 
+  modifier allowWithdraw {
+    require(openToWithdraw == true);
+    _;
+  }
+
   function withdraw(address payable _to) public allowWithdraw {
     uint256 amount = balances[msg.sender];
-    if(amount > 0) {
-      balances[msg.sender] = 0;
-      (bool sent,) = _to.call{value: amount}("");
-      if(!sent) {
-        balances[msg.sender] = amount;
-      }
-    }
+    require(amount > 0, "No balance available.");
+    (bool sent,) = _to.call{value: amount}("");
+    require(sent, "Transaction failed");
+    balances[msg.sender] = 0;
   }
 
   function receive() external payable {
